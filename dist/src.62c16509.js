@@ -29566,7 +29566,87 @@ if ("development" === 'production') {
 } else {
   module.exports = require('./cjs/react-dom.development.js');
 }
-},{"./cjs/react-dom.development.js":"../node_modules/react-dom/cjs/react-dom.development.js"}],"../src/App.tsx":[function(require,module,exports) {
+},{"./cjs/react-dom.development.js":"../node_modules/react-dom/cjs/react-dom.development.js"}],"../src/flux/state.ts":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+var initialState = {
+  count: 0
+};
+exports.default = initialState;
+/*
+内部APIが操作する対象となるDBの定義のようなもの
+type CountStateでDBの型を定義している
+inititalStateはDBの初期状態
+*/
+},{}],"../src/flux/reducer.ts":[function(require,module,exports) {
+"use strict";
+
+var __importDefault = this && this.__importDefault || function (mod) {
+  return mod && mod.__esModule ? mod : {
+    "default": mod
+  };
+};
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.counterReducer = void 0;
+
+var state_1 = __importDefault(require("./state"));
+
+var counterReducer = function counterReducer(state, action) {
+  switch (action.type) {
+    case "INCREMENT":
+      {
+        return {
+          count: state.count + 1
+        };
+      }
+
+    case "RESET":
+      {
+        return {
+          count: state_1.default.count
+        };
+      }
+
+    default:
+      return state;
+  }
+};
+
+exports.counterReducer = counterReducer;
+},{"./state":"../src/flux/state.ts"}],"../src/flux/Store.ts":[function(require,module,exports) {
+"use strict";
+
+var __importDefault = this && this.__importDefault || function (mod) {
+  return mod && mod.__esModule ? mod : {
+    "default": mod
+  };
+};
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var react_1 = __importDefault(require("react"));
+
+var Store = react_1.default.createContext({});
+exports.default = Store;
+/*
+state(DB)とdispatch(API)をいっしょにしたものがStore
+Storeという名付けがよくない気がするが、実質的にはただのContext={state, dispatch}
+この２つを
+<Context.Provider>
+ <Consurmer />
+</Context.provider>
+という形で、Comsumerが利用できるようにする(Context)
+
+*/
+},{"react":"../node_modules/react/index.js"}],"../src/Counter.tsx":[function(require,module,exports) {
 "use strict";
 
 var __importDefault = this && this.__importDefault || function (mod) {
@@ -29581,12 +29661,73 @@ Object.defineProperty(exports, "__esModule", {
 
 var react_1 = __importDefault(require("react"));
 
-function App() {
-  return react_1.default.createElement("div", null, "Hello, world.");
+var react_2 = require("react");
+
+var react_3 = require("react");
+
+var reducer_1 = require("./flux/reducer");
+
+var state_1 = __importDefault(require("./flux/state"));
+
+var Store_1 = __importDefault(require("./flux/Store"));
+
+function Counter() {
+  // useReducerの使い方。
+  // counterReducer, initialStateを「使えるようにする」
+  // 内部DBがintitialStateとして初期化されたAPIをたてる。
+  // counterReducerがその内部の実装
+  // dispatchがreducerの引数であるActionのtypeからつくられるインターフェイス
+  // stateが内部DBの初期状態
+  var _a = react_2.useReducer(reducer_1.counterReducer, state_1.default),
+      state = _a[0],
+      dispatch = _a[1]; // Contextの初期状態を作成。state=内部DBとdispatch=DBアクセスのためのインターフェイスをグローバルにおく。
+
+
+  var context = {
+    state: state,
+    dispatch: dispatch
+  }; // useContext(コンテキストオブジェクト)で子コンポーネントは現在のContextにアクセスできる。
+  // Store.Providerでvalueに指定した初期値でコンテキストを渡す。
+
+  return react_1.default.createElement("div", null, react_1.default.createElement(Store_1.default.Provider, {
+    value: context
+  }, react_1.default.createElement(CurrentDigit, null), react_1.default.createElement("div", null), react_1.default.createElement(Button, {
+    name: "increment"
+  }), react_1.default.createElement(Button, {
+    name: "reset"
+  })));
 }
 
-exports.default = App;
-},{"react":"../node_modules/react/index.js"}],"../src/index.tsx":[function(require,module,exports) {
+exports.default = Counter;
+
+function CurrentDigit() {
+  var context = react_3.useContext(Store_1.default);
+  return react_1.default.createElement("h1", null, context.state.count);
+}
+
+function Button(props) {
+  var context = react_3.useContext(Store_1.default);
+
+  function onClickEvent() {
+    if (props.name === "increment") {
+      // dispatchでstateに変更が加えられると、useContextを使った
+      // すべてのコンポーネントが再レンダリングされる。
+      context.dispatch({
+        type: "INCREMENT"
+      });
+    } else {
+      context.dispatch({
+        type: "RESET"
+      });
+    }
+  }
+
+  return react_1.default.createElement("button", {
+    type: "button",
+    onClick: onClickEvent
+  }, props.name);
+}
+},{"react":"../node_modules/react/index.js","./flux/reducer":"../src/flux/reducer.ts","./flux/state":"../src/flux/state.ts","./flux/Store":"../src/flux/Store.ts"}],"../src/index.tsx":[function(require,module,exports) {
 "use strict";
 
 var __importDefault = this && this.__importDefault || function (mod) {
@@ -29603,10 +29744,10 @@ var react_1 = __importDefault(require("react"));
 
 var react_dom_1 = __importDefault(require("react-dom"));
 
-var App_1 = __importDefault(require("./App"));
+var Counter_1 = __importDefault(require("./Counter"));
 
-react_dom_1.default.render(react_1.default.createElement(App_1.default, null), document.getElementById("root"));
-},{"react":"../node_modules/react/index.js","react-dom":"../node_modules/react-dom/index.js","./App":"../src/App.tsx"}],"../node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
+react_dom_1.default.render(react_1.default.createElement(Counter_1.default, null), document.getElementById("root"));
+},{"react":"../node_modules/react/index.js","react-dom":"../node_modules/react-dom/index.js","./Counter":"../src/Counter.tsx"}],"../node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
 var OldModule = module.bundle.Module;
@@ -29634,7 +29775,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "56765" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "62441" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
