@@ -1,0 +1,7 @@
+npm install -D parcel-bundler
+npm install react react-dom
+npm install -D typescript @types/react @types/react-dom @types/node
+npm install -D jest ts-jest @types/jest @testing-library/react
+npm install -D prettier
+npx tsc --init
+
